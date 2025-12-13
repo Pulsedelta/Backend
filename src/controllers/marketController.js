@@ -4,7 +4,15 @@ import { NotFoundError } from '../utils/errors.js';
 import Market from '../database/models/Market.js';
 import MarketHistory from '../database/models/MarketHistory.js';
 import { readContract } from '../services/blockchain/client.js';
-import CategoricalMarketABI from '../abis/CategoricalMarket.json' with { type: 'json' };
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CategoricalMarketABI = JSON.parse(
+  readFileSync(join(__dirname, '../abis/CategoricalMarket.json'), 'utf8')
+);
 
 /**
  * @desc    Get all markets with filters
