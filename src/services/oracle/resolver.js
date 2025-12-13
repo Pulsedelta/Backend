@@ -3,15 +3,9 @@ import { logger } from '../../utils/logger.js';
 import { writeContract } from '../blockchain/client.js';
 import Market from '../../database/models/Market.js';
 import { getSportsService } from '../external-api/sports.js';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { loadABI } from '../../utils/loadABI.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const CategoricalMarketABI = JSON.parse(
-  readFileSync(join(__dirname, '../../abis/CategoricalMarket.json'), 'utf8')
-);
+const CategoricalMarketABI = loadABI('CategoricalMarket.json');
 
 /**
  * Oracle/Resolver Service (BE-5)

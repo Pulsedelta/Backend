@@ -11,18 +11,10 @@ import Market from '../../database/models/Market.js';
 import MarketEvent from '../../database/models/MarketEvent.js';
 import MarketHistory from '../../database/models/MarketHistory.js';
 import User from '../../database/models/User.js';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { loadABI } from '../../utils/loadABI.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const CategoricalMarketFactoryABI = JSON.parse(
-  readFileSync(join(__dirname, '../../abis/CategoricalMarketFactory.json'), 'utf8')
-);
-const CategoricalMarketABI = JSON.parse(
-  readFileSync(join(__dirname, '../../abis/CategoricalMarket.json'), 'utf8')
-);
+const CategoricalMarketFactoryABI = loadABI('CategoricalMarketFactory.json');
+const CategoricalMarketABI = loadABI('CategoricalMarket.json');
 
 /**
  * Blockchain Indexer Service (BE-1)
