@@ -22,15 +22,27 @@
 
 ## 🌟 Overview
 
-The PulseDelta backend is a comprehensive Node.js/Express application that handles:
+The PulseDelta backend is a comprehensive Node.js/Express application built on **BlockDAG Network** that handles:
 
-1. **Blockchain Indexing (BE-1)**: Listen to smart contract events and index on-chain data
+1. **Blockchain Indexing (BE-1)**: Listen to smart contract events and index on-chain data from BlockDAG
 2. **External API Integration (BE-2)**: Fetch real-world data for market resolution
 3. **Historical Data Service (BE-3)**: Store and serve historical market data
 4. **AI Insight Service (BE-4)**: Generate probabilistic forecasts using machine learning
 5. **Market Resolution Service (BE-5)**: Oracle that automatically resolves markets
 6. **Comment/Social Service (BE-6)**: Off-chain user comments and social features
 7. **Data Storage (BE-7)**: Centralized PostgreSQL database
+
+### 🔗 BlockDAG Network Integration
+
+This backend is built on the **BlockDAG Awakening Testnet**, a high-performance blockchain utilizing a Directed Acyclic Graph (DAG) structure for efficient transaction processing.
+
+**Network Details:**
+- **Network**: Awakening Testnet
+- **Chain ID**: 1043
+- **RPC URL**: https://rpc.awakening.bdagscan.com
+- **Explorer**: https://awakening.bdagscan.com
+- **Currency**: BDAG
+- **Faucet**: https://awakening.bdagscan.com/faucet
 
 ---
 
@@ -63,7 +75,7 @@ The PulseDelta backend is a comprehensive Node.js/Express application that handl
    │                 │
 ┌──▼───────┐  ┌─────▼──────┐
 │PostgreSQL│  │ Blockchain │
-│ Database │  │  (Celo)    │
+│ Database │  │ (BlockDAG) │
 └──────────┘  └────────────┘
 ```
 
@@ -275,15 +287,15 @@ Edit the `.env` file with your configuration. Here's what each variable means:
 
 ### ⛓️ Required for BLOCKCHAIN (After Contract Deployment)
 
-#### **BLOCKCHAIN_RPC_URL=https://alfajores-forno.celo-testnet.org**
+#### **BLOCKCHAIN_RPC_URL=https://rpc.awakening.bdagscan.com**
 
-- **What**: URL to connect to Celo blockchain
+- **What**: URL to connect to BlockDAG blockchain
 - **Why**: To read data from smart contracts
-- **Action**: ✅ Already set (free public RPC for Celo testnet)
+- **Action**: ✅ Already set (free public RPC for BlockDAG Awakening Testnet)
 
-#### **BLOCKCHAIN_CHAIN_ID=44787**
+#### **BLOCKCHAIN_CHAIN_ID=1043**
 
-- **What**: Celo Alfajores testnet chain ID
+- **What**: BlockDAG Awakening Testnet chain ID
 - **Why**: Identifies which blockchain network
 - **Action**: ✅ Keep as is
 

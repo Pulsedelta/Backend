@@ -8,6 +8,10 @@ const srcDir = dirname(utilsDir);
 
 export function loadABI(abiFileName) {
   const abiPath = join(srcDir, 'abis', abiFileName);
-  return JSON.parse(readFileSync(abiPath, 'utf8'));
+  const contractJson = JSON.parse(readFileSync(abiPath, 'utf8'));
+  
+  // If the JSON has an 'abi' property (Foundry format), return just the ABI array
+  // Otherwise, assume the entire file is the ABI array
+  return contractJson.abi || contractJson;
 }
 
