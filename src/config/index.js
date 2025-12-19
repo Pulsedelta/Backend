@@ -32,10 +32,17 @@ export const config = {
   // Blockchain configuration
   blockchain: {
     rpcUrl:
-      process.env.BLOCKCHAIN_RPC_URL ||
-      "https://alfajores-forno.celo-testnet.org",
-    chainId: parseInt(process.env.BLOCKCHAIN_CHAIN_ID, 10) || 44787,
-    network: process.env.BLOCKCHAIN_NETWORK || "alfajores",
+      process.env.BLOCKCHAIN_RPC_URL || "https://rpc.awakening.bdagscan.com",
+    chainId: parseInt(process.env.BLOCKCHAIN_CHAIN_ID, 10) || 1043,
+    network: process.env.BLOCKCHAIN_NETWORK || "blockdag-awakening",
+    explorerUrl:
+      process.env.BLOCKCHAIN_EXPLORER_URL || "https://awakening.bdagscan.com",
+    relayerUrl:
+      process.env.BLOCKCHAIN_RELAYER_URL || "relay.awakening.bdagscan.com",
+    faucetUrl:
+      process.env.BLOCKCHAIN_FAUCET_URL ||
+      "https://awakening.bdagscan.com/faucet",
+    currencySymbol: process.env.BLOCKCHAIN_CURRENCY || "BDAG",
     contracts: {
       marketFactory: process.env.MARKET_FACTORY_ADDRESS,
       feeManager: process.env.FEE_MANAGER_ADDRESS,

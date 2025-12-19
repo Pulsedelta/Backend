@@ -1,14 +1,47 @@
-import { createPublicClient, createWalletClient, http } from 'viem';
-import { celoAlfajores } from 'viem/chains';
-import { privateKeyToAccount } from 'viem/accounts';
-import { config } from '../../config/index.js';
-import { logger } from '../../utils/logger.js';
+import {
+  createPublicClient,
+  createWalletClient,
+  http,
+  defineChain,
+} from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { config } from "../../config/index.js";
+import { logger } from "../../utils/logger.js";
+
+/**
+ * BlockDAG Awakening Testnet Chain Definition
+ */
+export const blockdagAwakening = defineChain({
+  id: 1043,
+  name: "BlockDAG Awakening Testnet",
+  network: "blockdag-awakening",
+  nativeCurrency: {
+    decimals: 18,
+    name: "BDAG",
+    symbol: "BDAG",
+  },
+  rpcUrls: {
+    default: {
+      http: [config.blockchain.rpcUrl],
+    },
+    public: {
+      http: [config.blockchain.rpcUrl],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "BDAGScan",
+      url: "https://awakening.bdagscan.com",
+    },
+  },
+  testnet: true,
+});
 
 /**
  * Public Client for reading blockchain data
  */
 export const publicClient = createPublicClient({
-  chain: celoAlfajores,
+  chain: blockdagAwakening,
   transport: http(config.blockchain.rpcUrl),
 });
 
@@ -20,16 +53,16 @@ let walletClient = null;
 if (config.oracle.privateKey && config.oracle.enabled) {
   try {
     const account = privateKeyToAccount(config.oracle.privateKey);
-    
+
     walletClient = createWalletClient({
       account,
-      chain: celoAlfajores,
+      chain: blockdagAwakening,
       transport: http(config.blockchain.rpcUrl),
     });
 
     logger.info(`🔑 Oracle wallet initialized: ${account.address}`);
   } catch (error) {
-    logger.error('Failed to initialize oracle wallet:', error);
+    logger.error("Failed to initialize oracle wallet:", error);
   }
 }
 
@@ -40,7 +73,7 @@ export const getBlockNumber = async () => {
   try {
     return await publicClient.getBlockNumber();
   } catch (error) {
-    logger.error('Error getting block number:', error);
+    logger.error("Error getting block number:", error);
     throw error;
   }
 };
@@ -52,7 +85,7 @@ export const getTransactionReceipt = async (hash) => {
   try {
     return await publicClient.getTransactionReceipt({ hash });
   } catch (error) {
-    logger.error('Error getting transaction receipt:', error);
+    logger.error("Error getting transaction receipt:", error);
     throw error;
   }
 };
@@ -60,7 +93,12 @@ export const getTransactionReceipt = async (hash) => {
 /**
  * Read contract data
  */
-export const readContract = async ({ address, abi, functionName, args = [] }) => {
+export const readContract = async ({
+  address,
+  abi,
+  functionName,
+  args = [],
+}) => {
   try {
     return await publicClient.readContract({
       address,
@@ -77,9 +115,16 @@ export const readContract = async ({ address, abi, functionName, args = [] }) =>
 /**
  * Write contract transaction (Oracle only)
  */
-export const writeContract = async ({ address, abi, functionName, args = [] }) => {
+export const writeContract = async ({
+  address,
+  abi,
+  functionName,
+  args = [],
+}) => {
   if (!walletClient) {
-    throw new Error('Wallet client not initialized. Check oracle configuration.');
+    throw new Error(
+      "Wallet client not initialized. Check oracle configuration."
+    );
   }
 
   try {
@@ -108,27 +153,39 @@ export const writeContract = async ({ address, abi, functionName, args = [] }) =
 /**
  * Watch contract events
  */
-export const watchContractEvent = ({ address, abi, eventName, onLogs, onError }) => {
+export const watchContractEvent = ({
+  address,
+  abi,
+  eventName,
+  onLogs,
+  onError,
+}) => {
   return publicClient.watchContractEvent({
     address,
     abi,
     eventName,
     onLogs,
-    onError: onError || ((error) => logger.error('Event watch error:', error)),
+    onError: onError || ((error) => logger.error("Event watch error:", error)),
   });
 };
 
 /**
  * Get logs for specific event
  */
-export const getContractLogs = async ({ address, abi, eventName, fromBlock, toBlock }) => {
+export const getContractLogs = async ({
+  address,
+  abi,
+  eventName,
+  fromBlock,
+  toBlock,
+}) => {
   try {
     const logs = await publicClient.getContractEvents({
       address,
       abi,
       eventName,
-      fromBlock: fromBlock || 'earliest',
-      toBlock: toBlock || 'latest',
+      fromBlock: fromBlock || "earliest",
+      toBlock: toBlock || "latest",
     });
 
     return logs;
@@ -148,4 +205,3 @@ export default {
   watchContractEvent,
   getContractLogs,
 };
-

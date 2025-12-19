@@ -1,20 +1,20 @@
-import { config } from '../../config/index.js';
-import { logger } from '../../utils/logger.js';
+import { config } from "../../config/index.js";
+import { logger } from "../../utils/logger.js";
 import {
   publicClient,
   getBlockNumber,
   readContract,
   watchContractEvent,
   getContractLogs,
-} from './client.js';
-import Market from '../../database/models/Market.js';
-import MarketEvent from '../../database/models/MarketEvent.js';
-import MarketHistory from '../../database/models/MarketHistory.js';
-import User from '../../database/models/User.js';
-import { loadABI } from '../../utils/loadABI.js';
+} from "./client.js";
+import Market from "../../database/models/Market.js";
+import MarketEvent from "../../database/models/MarketEvent.js";
+import MarketHistory from "../../database/models/MarketHistory.js";
+import User from "../../database/models/User.js";
+import { loadABI } from "../../utils/loadABI.js";
 
-const CategoricalMarketFactoryABI = loadABI('CategoricalMarketFactory.json');
-const CategoricalMarketABI = loadABI('CategoricalMarket.json');
+const CategoricalMarketFactoryABI = loadABI("CategoricalMarketFactory.json");
+const CategoricalMarketABI = loadABI("CategoricalMarket.json");
 
 /**
  * Blockchain Indexer Service (BE-1)
@@ -33,22 +33,28 @@ class BlockchainIndexer {
    */
   async start() {
     if (this.isRunning) {
-      logger.warn('Indexer is already running');
+      logger.warn("Indexer is already running");
       return;
     }
 
-    logger.info('🚀 Starting blockchain indexer...');
+    logger.info("🚀 Starting blockchain indexer...");
 
     try {
       // Initialize last processed block
-      if (config.indexer.startBlock === 'latest') {
+      if (config.indexer.startBlock === "latest") {
         try {
           this.lastProcessedBlock = await getBlockNumber();
           logger.info(`Starting from latest block: ${this.lastProcessedBlock}`);
         } catch (error) {
-          logger.warn('⚠️  Could not connect to blockchain RPC. Indexer will start in degraded mode.');
-          logger.warn('   The API server will continue to work, but blockchain indexing is disabled.');
-          logger.warn('   To enable indexing, check your RPC URL and network connection.');
+          logger.warn(
+            "⚠️  Could not connect to blockchain RPC. Indexer will start in degraded mode."
+          );
+          logger.warn(
+            "   The API server will continue to work, but blockchain indexing is disabled."
+          );
+          logger.warn(
+            "   To enable indexing, check your RPC URL and network connection."
+          );
           // Use a default block number to allow indexer to start
           this.lastProcessedBlock = 0n;
         }
@@ -59,23 +65,32 @@ class BlockchainIndexer {
       this.isRunning = true;
 
       // Only process historical events if we have a valid block number
-      if (this.lastProcessedBlock > 0n || config.indexer.startBlock !== 'latest') {
+      if (
+        this.lastProcessedBlock > 0n ||
+        config.indexer.startBlock !== "latest"
+      ) {
         // Process historical events first
         await this.processHistoricalEvents();
 
-        // Start watching for new events
-        await this.startWatching();
+        // Start watching for new events (disabled for BlockDAG - polling is more reliable)
+        // await this.startWatching();
 
         // Start polling for new blocks
         this.startPolling();
 
-        logger.info('✅ Blockchain indexer started successfully');
+        logger.info(
+          "✅ Blockchain indexer started successfully (polling mode)"
+        );
       } else {
-        logger.warn('⚠️  Blockchain indexer started in degraded mode (no blockchain connection)');
+        logger.warn(
+          "⚠️  Blockchain indexer started in degraded mode (no blockchain connection)"
+        );
       }
     } catch (error) {
-      logger.error('❌ Failed to start blockchain indexer:', error);
-      logger.warn('⚠️  API server will continue to work without blockchain indexing');
+      logger.error("❌ Failed to start blockchain indexer:", error);
+      logger.warn(
+        "⚠️  API server will continue to work without blockchain indexing"
+      );
       this.isRunning = false;
       throw error;
     }
@@ -89,18 +104,18 @@ class BlockchainIndexer {
       return;
     }
 
-    logger.info('🛑 Stopping blockchain indexer...');
+    logger.info("🛑 Stopping blockchain indexer...");
     this.isRunning = false;
 
     // Unwatch all event watchers
     for (const unwatch of this.watchers) {
-      if (typeof unwatch === 'function') {
+      if (typeof unwatch === "function") {
         unwatch();
       }
     }
     this.watchers = [];
 
-    logger.info('✅ Blockchain indexer stopped');
+    logger.info("✅ Blockchain indexer stopped");
   }
 
   /**
@@ -108,12 +123,14 @@ class BlockchainIndexer {
    */
   async processHistoricalEvents() {
     if (!config.blockchain.contracts.marketFactory) {
-      logger.warn('Market factory address not configured, skipping historical indexing');
+      logger.warn(
+        "Market factory address not configured, skipping historical indexing"
+      );
       return;
     }
 
     try {
-      logger.info('📚 Processing historical events...');
+      logger.info("📚 Processing historical events...");
       const currentBlock = await getBlockNumber();
       const fromBlock = this.lastProcessedBlock;
       const toBlock = currentBlock;
@@ -122,8 +139,15 @@ class BlockchainIndexer {
       const batchSize = config.indexer.batchSize;
       let processed = 0;
 
-      for (let start = fromBlock; start <= toBlock; start += BigInt(batchSize)) {
-        const end = start + BigInt(batchSize) > toBlock ? toBlock : start + BigInt(batchSize);
+      for (
+        let start = fromBlock;
+        start <= toBlock;
+        start += BigInt(batchSize)
+      ) {
+        const end =
+          start + BigInt(batchSize) > toBlock
+            ? toBlock
+            : start + BigInt(batchSize);
 
         await this.processBlockRange(start, end);
         processed += Number(end - start);
@@ -132,9 +156,9 @@ class BlockchainIndexer {
         logger.info(`Processed blocks ${start} to ${end} (${processed} total)`);
       }
 
-      logger.info('✅ Historical events processing completed');
+      logger.info("✅ Historical events processing completed");
     } catch (error) {
-      logger.error('❌ Error processing historical events:', error);
+      logger.error("❌ Error processing historical events:", error);
       throw error;
     }
   }
@@ -154,7 +178,10 @@ class BlockchainIndexer {
         await this.indexMarketEvents(marketAddress, fromBlock, toBlock);
       }
     } catch (error) {
-      logger.error(`Error processing block range ${fromBlock}-${toBlock}:`, error);
+      logger.error(
+        `Error processing block range ${fromBlock}-${toBlock}:`,
+        error
+      );
     }
   }
 
@@ -166,7 +193,7 @@ class BlockchainIndexer {
       const logs = await getContractLogs({
         address: config.blockchain.contracts.marketFactory,
         abi: CategoricalMarketFactoryABI,
-        eventName: 'MarketCreated',
+        eventName: "MarketCreated",
         fromBlock,
         toBlock,
       });
@@ -175,7 +202,7 @@ class BlockchainIndexer {
         await this.handleMarketCreated(log);
       }
     } catch (error) {
-      logger.error('Error indexing MarketCreated events:', error);
+      logger.error("Error indexing MarketCreated events:", error);
     }
   }
 
@@ -190,18 +217,21 @@ class BlockchainIndexer {
       // Extract market data from event
       const marketId = args.market || args.marketAddress;
       const creatorAddress = args.creator || args.creatorAddress;
-      const question = args.question || '';
+      const question = args.question || "";
       const outcomes = args.outcomes || [];
 
       // Store market in database
       await Market.upsert({
         id: marketId,
         question,
-        description: '',
-        category: 'General',
-        status: 'active',
+        description: "",
+        category: "General",
+        status: "active",
         outcomeCount: outcomes.length,
-        outcomes: outcomes.map((outcome, index) => ({ id: index, name: outcome })),
+        outcomes: outcomes.map((outcome, index) => ({
+          id: index,
+          name: outcome,
+        })),
         creatorAddress,
         factoryAddress: config.blockchain.contracts.marketFactory,
       });
@@ -209,7 +239,7 @@ class BlockchainIndexer {
       // Store event
       await MarketEvent.create({
         marketId,
-        eventType: 'MarketCreated',
+        eventType: "MarketCreated",
         userAddress: creatorAddress,
         blockNumber: Number(blockNumber),
         transactionHash,
@@ -223,7 +253,7 @@ class BlockchainIndexer {
 
       logger.info(`✅ Indexed new market: ${marketId}`);
     } catch (error) {
-      logger.error('Error handling MarketCreated event:', error);
+      logger.error("Error handling MarketCreated event:", error);
     }
   }
 
@@ -233,16 +263,36 @@ class BlockchainIndexer {
   async indexMarketEvents(marketAddress, fromBlock, toBlock) {
     try {
       // Index SharesPurchased events
-      await this.indexEventType(marketAddress, 'SharesPurchased', fromBlock, toBlock);
-      
+      await this.indexEventType(
+        marketAddress,
+        "SharesPurchased",
+        fromBlock,
+        toBlock
+      );
+
       // Index SharesSold events
-      await this.indexEventType(marketAddress, 'SharesSold', fromBlock, toBlock);
-      
+      await this.indexEventType(
+        marketAddress,
+        "SharesSold",
+        fromBlock,
+        toBlock
+      );
+
       // Index LiquidityAdded events
-      await this.indexEventType(marketAddress, 'LiquidityAdded', fromBlock, toBlock);
-      
+      await this.indexEventType(
+        marketAddress,
+        "LiquidityAdded",
+        fromBlock,
+        toBlock
+      );
+
       // Index MarketResolved events
-      await this.indexEventType(marketAddress, 'MarketResolved', fromBlock, toBlock);
+      await this.indexEventType(
+        marketAddress,
+        "MarketResolved",
+        fromBlock,
+        toBlock
+      );
     } catch (error) {
       logger.error(`Error indexing events for market ${marketAddress}:`, error);
     }
@@ -266,7 +316,7 @@ class BlockchainIndexer {
       }
     } catch (error) {
       // Event might not exist in ABI, skip silently
-      if (!error.message.includes('not found')) {
+      if (!error.message.includes("not found")) {
         logger.error(`Error indexing ${eventName} events:`, error);
       }
     }
@@ -281,10 +331,12 @@ class BlockchainIndexer {
       const block = await publicClient.getBlock({ blockNumber });
 
       const marketId = log.address;
-      const userAddress = args.user || args.buyer || args.seller || args.provider;
-      const outcomeId = args.outcome !== undefined ? Number(args.outcome) : null;
-      const shares = args.shares?.toString() || '0';
-      const cost = args.cost?.toString() || args.amount?.toString() || '0';
+      const userAddress =
+        args.user || args.buyer || args.seller || args.provider;
+      const outcomeId =
+        args.outcome !== undefined ? Number(args.outcome) : null;
+      const shares = args.shares?.toString() || "0";
+      const cost = args.cost?.toString() || args.amount?.toString() || "0";
 
       // Store event
       await MarketEvent.create({
@@ -304,7 +356,7 @@ class BlockchainIndexer {
       // Update user stats
       if (userAddress) {
         await User.upsert({ address: userAddress });
-        if (eventType === 'SharesPurchased' || eventType === 'SharesSold') {
+        if (eventType === "SharesPurchased" || eventType === "SharesSold") {
           await User.updateStats(userAddress, {
             totalTrades: 1,
             totalVolume: cost,
@@ -313,17 +365,20 @@ class BlockchainIndexer {
       }
 
       // Update market prices and volume periodically
-      if (eventType === 'SharesPurchased' || eventType === 'SharesSold') {
+      if (eventType === "SharesPurchased" || eventType === "SharesSold") {
         await this.updateMarketSnapshot(marketId, block.timestamp);
       }
 
       // Handle market resolution
-      if (eventType === 'MarketResolved') {
-        const winningOutcome = args.winningOutcome !== undefined ? Number(args.winningOutcome) : null;
-        await Market.updateStatus(marketId, 'resolved');
+      if (eventType === "MarketResolved") {
+        const winningOutcome =
+          args.winningOutcome !== undefined
+            ? Number(args.winningOutcome)
+            : null;
+        await Market.updateStatus(marketId, "resolved");
         await MarketEvent.create({
           marketId,
-          eventType: 'MarketResolved',
+          eventType: "MarketResolved",
           userAddress: null,
           outcomeId: winningOutcome,
           blockNumber: Number(blockNumber),
@@ -349,7 +404,10 @@ class BlockchainIndexer {
       const market = await Market.findById(marketId);
       if (!market) return;
 
-      const prices = await this.fetchMarketPrices(marketId, market.outcomeCount);
+      const prices = await this.fetchMarketPrices(
+        marketId,
+        market.outcomeCount
+      );
       const volume = await this.fetchMarketVolume(marketId);
       const liquidity = await this.fetchMarketLiquidity(marketId);
 
@@ -380,7 +438,7 @@ class BlockchainIndexer {
           const price = await readContract({
             address: marketId,
             abi: CategoricalMarketABI,
-            functionName: 'getPrice',
+            functionName: "getPrice",
             args: [i],
           });
           prices.push(parseFloat(price.toString()) / 1e18);
@@ -403,11 +461,11 @@ class BlockchainIndexer {
       const volume = await readContract({
         address: marketId,
         abi: CategoricalMarketABI,
-        functionName: 'totalVolume',
+        functionName: "totalVolume",
       });
       return volume.toString();
     } catch (error) {
-      return '0';
+      return "0";
     }
   }
 
@@ -419,24 +477,32 @@ class BlockchainIndexer {
       const liquidity = await readContract({
         address: marketId,
         abi: CategoricalMarketABI,
-        functionName: 'totalLiquidity',
+        functionName: "totalLiquidity",
       });
       return liquidity.toString();
     } catch (error) {
-      return '0';
+      return "0";
     }
   }
 
   /**
    * Start watching for new events
+   * DISABLED: BlockDAG RPC doesn't support persistent filters (eth_getFilterChanges)
+   * Using polling instead which is more reliable for BlockDAG
    */
   async startWatching() {
     if (!config.blockchain.contracts.marketFactory) {
-      logger.warn('Market factory address not configured, skipping event watching');
+      logger.info("Market factory address not configured, using polling only");
       return;
     }
 
-    // Watch for new MarketCreated events
+    // Event watching disabled for BlockDAG compatibility
+    // Polling mechanism handles all event detection
+    logger.info(
+      "📊 Event watching disabled - using polling for event detection"
+    );
+
+    /* Commented out - BlockDAG doesn't support eth_getFilterChanges
     const unwatchFactory = watchContractEvent({
       address: config.blockchain.contracts.marketFactory,
       abi: CategoricalMarketFactoryABI,
@@ -447,10 +513,8 @@ class BlockchainIndexer {
         }
       },
     });
-
     this.watchers.push(unwatchFactory);
-
-    logger.info('👀 Watching for new contract events...');
+    */
   }
 
   /**
@@ -472,7 +536,7 @@ class BlockchainIndexer {
           this.lastProcessedBlock = toBlock;
         }
       } catch (error) {
-        logger.error('Error in polling loop:', error);
+        logger.error("Error in polling loop:", error);
       }
     }, pollInterval);
 
@@ -510,5 +574,3 @@ export const stopIndexer = async () => {
 };
 
 export default getIndexer;
-
-
