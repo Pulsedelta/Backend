@@ -2,6 +2,7 @@ services:
   - type: web
     name: pulsedelta-backend
     env: node
+    rootDir: .
     buildCommand: npm install
     startCommand: npm start
     envVars:
