@@ -3,7 +3,7 @@ services:
     name: pulsedelta-backend
     env: node
     buildCommand: npm install
-    startCommand: node src/server.js
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
