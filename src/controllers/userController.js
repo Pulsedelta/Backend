@@ -26,11 +26,17 @@ export const getUserProfile = asyncHandler(async (req, res) => {
     [address, 'SharesPurchased', 'SharesSold']
   );
 
+  // Get active predictions count
+  const positionsResult = await query(
+    'SELECT COUNT(*) as active_count FROM user_positions WHERE user_address = $1 AND shares > 0',
+    [address]
+  );
+
   const stats = eventsResult.rows[0] || {};
   const profile = {
     ...user,
     marketsTraded: parseInt(stats.total_trades || 0, 10),
-    activePredictions: 0, // TODO: Calculate from positions
+    activePredictions: parseInt(positionsResult.rows[0]?.active_count || 0, 10),
   };
 
   sendSuccess(res, profile, 'User profile retrieved successfully');

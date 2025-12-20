@@ -10,4 +10,3 @@ services:
         value: production
       # Add your other environment variables in the Render dashboard
       # They should not be committed to version control
-      # Nothing
