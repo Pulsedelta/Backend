@@ -5,6 +5,7 @@ import compression from "compression";
 import dotenv from "dotenv";
 import { config } from "./config/index.js";
 import { logger } from "./utils/logger.js";
+import { runSecurityChecks } from "./utils/securityValidator.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { notFoundHandler } from "./middleware/notFoundHandler.js";
 import rateLimiter from "./middleware/rateLimiter.js";
@@ -18,6 +19,9 @@ import analyticsRoutes from "./routes/analytics.js";
 
 // Load environment variables
 dotenv.config();
+
+// Run security checks
+runSecurityChecks();
 
 // Initialize Express app
 const app = express();

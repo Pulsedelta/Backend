@@ -1,6 +1,6 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendSuccess, sendPaginated } from '../utils/response.js';
-import { ValidationError, NotFoundError } from '../utils/errors.js';
+import { ValidationError, NotFoundError, AuthorizationError } from '../utils/errors.js';
 import Comment from '../database/models/Comment.js';
 import Market from '../database/models/Market.js';
 
@@ -97,8 +97,8 @@ export const deleteComment = asyncHandler(async (req, res) => {
     throw new NotFoundError(`Comment ${commentId} not found`);
   }
 
-  if (comment.author !== author) {
-    throw new ValidationError('You can only delete your own comments');
+  if (comment.author.toLowerCase() !== author.toLowerCase()) {
+    throw new AuthorizationError('You can only delete your own comments');
   }
 
   await Comment.delete(commentId, author);
